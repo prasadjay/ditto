@@ -139,8 +139,8 @@ func main() {
 
 	//APT-Related Requirements
 	apt_required_1 := [...]string{"ebtables", "ethtool"}
-	apt_required_2 := [...]string{"docker.io", "golang", "git", "apt-transport-https", "curl"}
-	k8s_required := [...]string{"kubelet", "kubeadm", "kubectl"}
+	//apt_required_2 := [...]string{"docker.io", "golang", "git", "apt-transport-https", "curl"}
+	//k8s_required := [...]string{"kubelet", "kubeadm", "kubectl"}
 
 	//Install apt-required
 
