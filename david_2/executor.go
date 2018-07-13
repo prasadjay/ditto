@@ -151,7 +151,7 @@ func main() {
 
 	for x := 0; x < len(apt_required_1); x++ {
 		value := apt_required_1[x]
-		fmt.Print("Installing " + value + "...\\c")
+		fmt.Print("Installing " + value + "...")
 
 		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+apt+" install -y "+value+" -q > /dev/null 2>&1", "ksh").Output()
 		if err != nil {
@@ -169,7 +169,7 @@ func main() {
 	//Install apt-required 2
 	for x := 0; x < len(apt_required_2); x++ {
 		value := apt_required_2[x]
-		fmt.Print("Installing " + value + "...\\c")
+		fmt.Print("Installing " + value + "...")
 
 		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+apt+" install -y "+value+" -q > /dev/null 2>&1", "ksh").Output()
 		if err != nil {
@@ -181,7 +181,7 @@ func main() {
 	}
 
 	//Restart Docker
-	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+systemctl+" start docker >/dev/null 2>&1 ; sleep 2;"+systemctl+" enable docker >/dev/null 2>&1 ; sleep 2", "ksh").Output()
+	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;sudo "+systemctl+" start docker >/dev/null 2>&1 ; sleep 2;sudo "+systemctl+" enable docker >/dev/null 2>&1 ; sleep 2", "ksh").Output()
 	if err != nil {
 		fmt.Println("Error restarting dockers : " + err.Error())
 		os.Exit(1)
@@ -190,7 +190,7 @@ func main() {
 	}
 
 	//Adding apt-key
-	fmt.Print("Adding apt-key...\\c")
+	fmt.Print("Adding apt-key...")
 	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - >/dev/null 2>&1", "ksh").Output()
 	if err != nil {
 		fmt.Println("Error : " + err.Error())
@@ -222,7 +222,7 @@ func main() {
 	//Install K8S Required
 	for x := 0; x < len(k8s_required); x++ {
 		value := k8s_required[x]
-		fmt.Print("Installing " + value + "...\\c")
+		fmt.Print("Installing " + value + "...")
 
 		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+apt+" install -y "+value+" -q > /dev/null 2>&1", "ksh").Output()
 		if err != nil {
@@ -260,7 +260,7 @@ func main() {
 	}
 
 	//Clone cri-tools repo
-	fmt.Print("Cloning git repo for cri-tools...\\c")
+	fmt.Print("Cloning git repo for cri-tools...")
 	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;git clone https://github.com/kubernetes-incubator/cri-tools.git >/dev/null 2>&1").Output()
 	if err != nil {
 		fmt.Println("Error fetching from GIT : " + err.Error())
