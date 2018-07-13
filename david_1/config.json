@@ -1,0 +1,6 @@
+{
+	"bearer_token":"eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJyZWFsbSI6IlZpbmNlIiwiZGF0YSI6eyJhY2NvdW50IjoiYXBvcmV0byIsImVtYWlsIjoibWFya0BhcG9yZXRvLmNvbSIsImlkIjoiNTk0NDU5YmFiNDcyYjkwMDAxNDFmODhiIiwib3JnYW5pemF0aW9uIjoiYXBvcmV0byIsInJlYWxtIjoidmluY2UifSwiYXVkIjoiY29uc29sZS5hcG9yZXRvLmNvbSIsImV4cCI6MTUzMzQyODYxMiwiaWF0IjoxNTMwODMzMDEyLCJpc3MiOiJtaWRnYXJkLmNvbnNvbGUuYXBvcmV0by5jb20iLCJzdWIiOiJhcG9yZXRvIn0.wfA-R6C-BcWaF3wop1YuCCT32YiaK_tBuBV1Ud2mu4a1rNCnHRjfs40L3-zM6u3TyH6Z08kXaWqxsM02lei65g",
+	"namespace":"/aporeto",
+	"recursive":"true",
+	"log_path":"./"
+}
