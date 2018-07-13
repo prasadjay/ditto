@@ -80,10 +80,10 @@ func main() {
 		return
 	}
 
-	outBytes, err := exec.Command("/bin/ksh", "! -x $curl").Output()
+	outBytes, err := exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;! -x /usr/bin/curl", "ksh").Output()
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println("Error : " + err.Error())
 	} else {
-		fmt.Println(string(outBytes))
+		fmt.Println("Success : " + string(outBytes))
 	}
 }
