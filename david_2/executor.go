@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"os/user"
@@ -192,40 +193,18 @@ func main() {
 	}
 
 	//check/modify /etc/apt/sources.list.d/kubernetes.list
-
+	//generate verifyKList.sh
+	ioutil.WriteFile("verifyKList.sh", []byte("#!/bin/ksh\nPATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\"\nexport PATH\nfile=\"/etc/apt/sources.list.d/kubernetes.list\"\nif [ ! -f \"$file\" ] ; then\n	print \"$1: $file not present.  Creating...\\c\"\n	touch $file\ncat << SEOF > $file\n# Added by Aporeto setup `date`\n\ndeb http://apt.kubernetes.io/ kubernetes-xenial main\n# Aporeto-end\nSEOF\nelse [ `head -10 $file | fgrep 'Added by Aporeto'|wc -w` -gt 0 ] \n\n	print \"$1: $file already added.  Skipping...\\c\"\n	#\n	#	sanity check\n	#\n	if [ $? != 0 ] ; then\n		print \"$1: FATAL: modification of $file failed!  Quitting.\"\n		rm -f $2 $3\n		exit 1\n	fi\n	cat \"$file\" >> $2\n	if [ $? != 0 ] ; then\n		print \"$1: FATAL: modification of $file failed!  Quitting.\"\n		rm -f $2 $3\n		exit 1\n	fi\n	cat $2 > \"$file\"\n	if [ $? != 0 ] ; then\n		print \"$1: FATAL: update of $file failed!  Quitting.\"\n		rm -f $2 $3\n		exit 1\n	fi\nfi"), 7777)
+	//give permission
+	_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;chmod 777 verifyKList.sh", "ksh").Output()
+	//execute verifyKLists
 	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;./verifyKList.sh", prog, tmp, tmp2, "ksh").Output()
 	if err != nil {
 		fmt.Println("Error : " + err.Error())
 	} else {
 		fmt.Println("Done")
 	}
-
-	/*file := "/etc/apt/sources.list.d/kubernetes.list"
-
-	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;! -f "+file, "ksh").Output()
-	if err != nil {
-		fmt.Println(prog + ": " + file + " not present.  Creating...\\c")
-		_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;touch "+file+";cat << SEOF > $file", "ksh").Output()
-
-		//Added by Aporeto setup `date`
-		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;deb http://apt.kubernetes.io/ kubernetes-xenial main", "ksh").Output()
-		if err != nil {
-			fmt.Println("Error : " + err.Error())
-		} else {
-			fmt.Println("Done")
-		}
-
-		//Aporeto-end
-		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;SEOF", "ksh").Output()
-
-	} else {
-		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;deb http://apt.kubernetes.io/ kubernetes-xenial main", "ksh").Output()
-		if err != nil {
-			fmt.Println("Error : " + err.Error())
-		} else {
-			fmt.Println("Done")
-		}
-
-	}*/
+	//delete verifyList.sh
+	os.Remove("verifyKList.sh")
 
 }
