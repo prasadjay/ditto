@@ -163,7 +163,7 @@ func main() {
 	}
 
 	//Perform APT Update
-	_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+apt+" update > /dev/null 2>&1", "ksh").Output()
+	_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+apt+" update > /dev/null 2>&1").Output()
 	fmt.Println("Done updating apt")
 
 	//Install apt-required 2
@@ -180,18 +180,24 @@ func main() {
 		}
 	}
 
-	//Restart Docker
-	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;sudo "+systemctl+" start docker >/dev/null 2>&1 ; sleep 2;sudo "+systemctl+" enable docker >/dev/null 2>&1 ; sleep 2", "ksh").Output()
+	fmt.Println("Restarting Docker...")
+	//Restart docker
+	ioutil.WriteFile("restartDocker.sh", []byte("#!/bin/ksh\nPATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\"\nexport PATH\n"+systemctl+" start docker >/dev/null 2>&1 ; sleep 2\n"+systemctl+" enable docker >/dev/null 2>&1 ; sleep 2\n"), 7777)
+	_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;chmod 777 restartDocker.sh", "ksh").Output()
+	//execute verifyKLists
+	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;./restartDocker.sh", "ksh").Output()
 	if err != nil {
-		fmt.Println("Error restarting dockers : " + err.Error())
+		fmt.Println("Error Restarting Docker: " + err.Error())
 		os.Exit(1)
 	} else {
-		fmt.Println("Done restarting dockers")
+		fmt.Println("Done Restarting Docker")
 	}
+	//delete restartDocker.sh
+	os.Remove("restartDocker.sh")
 
 	//Adding apt-key
 	fmt.Print("Adding apt-key...")
-	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - >/dev/null 2>&1", "ksh").Output()
+	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - >/dev/null 2>&1").Output()
 	if err != nil {
 		fmt.Println("Error : " + err.Error())
 		os.Exit(1)
@@ -216,7 +222,7 @@ func main() {
 	os.Remove("verifyKList.sh")
 
 	//Perform APT Update
-	_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+apt+" update > /dev/null 2>&1", "ksh").Output()
+	_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+apt+" update > /dev/null 2>&1").Output()
 	fmt.Println("Done updating apt")
 
 	//Install K8S Required
@@ -260,14 +266,14 @@ func main() {
 	}
 
 	//Clone cri-tools repo
-	fmt.Print("Cloning git repo for cri-tools...")
+	/*fmt.Print("Cloning git repo for cri-tools...")
 	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;git clone https://github.com/kubernetes-incubator/cri-tools.git >/dev/null 2>&1").Output()
 	if err != nil {
 		fmt.Println("Error fetching from GIT : " + err.Error())
 		os.Exit(1)
 	} else {
 		fmt.Println("Done")
-	}
+	}*/
 
 	//Begin readme
 
@@ -287,17 +293,17 @@ func main() {
 
 	//Create a network
 
-	cidr := ""
+	/*cidr := ""
 	fmt.Print("For our cluster, please enter a CIDR address (example: 192.168.1.1/24): ")
 	_, _ = fmt.Scanln(&cidr)
 	fmt.Print("Kubeadm Init with " + cidr + " starting and key writeout...")
-	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;kubeadm init --pod-network-cidr=$"+cidr+" >> $out", "ksh").Output()
+	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;kubeadm init --pod-network-cidr="+cidr+" >> "+out).Output()
 	if err != nil {
 		fmt.Println("Error : " + err.Error())
 		os.Exit(1)
 	} else {
 		fmt.Println("Done")
-	}
+	}*/
 
 	/*fmt.Print("Kubeadm Init with " + cidr + " starting and key writeout...")
 	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;kubeadm init --pod-network-cidr=$"+cidr+" >> $out", "ksh").Output()
@@ -314,6 +320,7 @@ func main() {
 	// See if directory exists.
 	if os.IsNotExist(err) {
 		//exists
+		fmt.Print("Creating kube folder... ")
 		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;mkdir -p $HOME/.kube", "ksh").Output()
 		if err != nil {
 			fmt.Println("Error creating .kube folder: " + err.Error())
@@ -321,24 +328,30 @@ func main() {
 		} else {
 			fmt.Println("Done")
 		}
-		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;cp -i /etc/kubernetes/admin.conf $HOME/.kube/config", "ksh").Output()
+
+		fmt.Print("Copying kube config... ")
+		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config").Output()
 		if err != nil {
 			fmt.Println("Error copying kubernetes admin config: " + err.Error())
 			os.Exit(1)
 		} else {
 			fmt.Println("Done")
 		}
-		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;chown $("+id+" -u):$("+id+" -g) $HOME/.kube/config", "ksh").Output()
+
+		fmt.Print("Creating permissions for folder... ")
+		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;sudo chown $("+id+" -u):$("+id+" -g) $HOME/.kube/config").Output()
 		if err != nil {
 			fmt.Println("Error chown " + id + " to user and group : " + err.Error())
 			os.Exit(1)
 		} else {
 			fmt.Println("Done")
 		}
+
 		//Deploy Project Calico
-		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";kubectl apply -f https://docs.projectcalico.org/v2.6/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml", "ksh").Output()
+		fmt.Print("Deploying Project Calico... ")
+		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";kubectl apply -f https://docs.projectcalico.org/v2.6/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml").Output()
 		if err != nil {
-			fmt.Println("Error chown " + id + " to user and group : " + err.Error())
+			fmt.Println("Error deploying Project Calico  : " + err.Error())
 			os.Exit(1)
 		} else {
 			fmt.Println("Done")
@@ -352,7 +365,7 @@ func main() {
 	fmt.Print("Untaint of the master so it will be available for scheduling workloads...")
 	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";kubectl taint nodes --all node-role.kubernetes.io/master- >/dev/null 2>&1", "ksh").Output()
 	if err != nil {
-		fmt.Println("Error untaint master " + id + " to user and group : " + err.Error())
+		fmt.Println("Error untaint master : " + err.Error())
 		os.Exit(1)
 	} else {
 		fmt.Println("Done")
@@ -370,7 +383,7 @@ func main() {
 
 	if app_r == "y" {
 		fmt.Print("Creating Namespace....")
-		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";kubectl create namespace guestbook", "ksh").Output()
+		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";kubectl create namespace guestbook").Output()
 		if err != nil {
 			fmt.Println("Error : " + err.Error())
 			os.Exit(1)
@@ -379,7 +392,7 @@ func main() {
 		}
 
 		fmt.Print("Grabbing application....")
-		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";kubectl apply -n guestbook -f \"https://raw.githubusercontent.com/dnester/guestbook/master/guestbook.yaml\"", "ksh").Output()
+		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";kubectl apply -n guestbook -f \"https://raw.githubusercontent.com/dnester/guestbook/master/guestbook.yaml\"").Output()
 		if err != nil {
 			fmt.Println("Error : " + err.Error())
 			os.Exit(1)
@@ -390,7 +403,7 @@ func main() {
 		//nothing do herer
 	} else {
 		fmt.Print("Creating Namespace....")
-		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";kubectl create namespace guestbook", "ksh").Output()
+		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";kubectl create namespace guestbook").Output()
 		if err != nil {
 			fmt.Println("Error : " + err.Error())
 			os.Exit(1)
@@ -399,7 +412,7 @@ func main() {
 		}
 
 		fmt.Print("Grabbing application....")
-		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";kubectl apply -n guestbook -f \"https://raw.githubusercontent.com/dnester/guestbook/master/guestbook.yaml\"", "ksh").Output()
+		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";kubectl apply -n guestbook -f \"https://raw.githubusercontent.com/dnester/guestbook/master/guestbook.yaml\"").Output()
 		if err != nil {
 			fmt.Println("Error : " + err.Error())
 			os.Exit(1)
