@@ -57,29 +57,6 @@ func main() {
 	out := "./Install_Readme_" + prog + ".log.date " + nowtime.Format("2006-Mar-02 15:04:05")
 	//version := "1.00"
 
-	fmt.Println("")
-	fmt.Println("")
-	fmt.Println("")
-	fmt.Println("-----------------------------------------------------------------")
-	fmt.Println("Aporeto K8S Quick Start " + prog)
-	fmt.Println("Installation of Kubernetes on Ubuntu")
-	fmt.Println("-----------------------------------------------------------------")
-	fmt.Println("running on                 " + hostname)
-	fmt.Println("date:                      " + nowtime.Format(time.RFC1123))
-	fmt.Println("log file:                  " + log)
-	fmt.Println("Install Readme:            " + out)
-	fmt.Println("")
-	fmt.Println("Press ENTER to continue, else CTRL-C to quit ")
-	fmt.Println("")
-	fmt.Println("")
-	fmt.Println("")
-	_, _ = fmt.Scanln(&continueCommand)
-
-	if continueCommand != "" {
-		fmt.Println("Aborted by user...")
-		return
-	}
-
 	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;! -x "+curl, "ksh").Output()
 	if err != nil {
 		fmt.Println(prog + ": SANITY: /usr/bin/curl missing!  Will install later ...")
@@ -133,6 +110,50 @@ func main() {
 		os.Remove(tmp2)
 		fmt.Println(prog + ": SANITY: /bin/df missing!  Quitting...")
 		os.Exit(1)
+	}
+
+	//handle Ctrl + C
+
+	fmt.Println("")
+	fmt.Println("")
+	fmt.Println("")
+	fmt.Println("-----------------------------------------------------------------")
+	fmt.Println("Aporeto K8S Quick Start " + prog)
+	fmt.Println("Installation of Kubernetes on Ubuntu")
+	fmt.Println("-----------------------------------------------------------------")
+	fmt.Println("running on                 " + hostname)
+	fmt.Println("date:                      " + nowtime.Format(time.RFC1123))
+	fmt.Println("log file:                  " + log)
+	fmt.Println("Install Readme:            " + out)
+	fmt.Println("")
+	fmt.Println("Press ENTER to continue, else CTRL-C to quit ")
+	fmt.Println("")
+	fmt.Println("")
+	fmt.Println("")
+	_, _ = fmt.Scanln(&continueCommand)
+
+	if continueCommand != "" {
+		fmt.Println("Aborted by user...")
+		return
+	}
+
+	//APT-Related Requirements
+	apt_required_1 := [...]string{"ebtables", "ethtool"}
+	apt_required_2 := [...]string{"docker.io", "golang", "git", "apt-transport-https", "curl"}
+	k8s_required := [...]string{"kubelet", "kubeadm", "kubectl"}
+
+	//Install apt-required
+
+	for x := 0; x < len(apt_required_1); x++ {
+		value := apt_required_1[x]
+		fmt.Println("Installing " + value + "...\\c")
+
+		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+apt+" install -y "+value+" -q > /dev/null 2>&1", "ksh").Output()
+		if err != nil {
+			fmt.Println("Error : " + err.Error())
+		} else {
+			fmt.Println("Done")
+		}
 	}
 
 }
