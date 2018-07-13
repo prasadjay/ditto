@@ -158,12 +158,8 @@ func main() {
 	}
 
 	//Perform APT Update
-	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+apt+" update > /dev/null 2>&1", "ksh").Output()
-	if err != nil {
-		fmt.Println("Error : " + err.Error())
-	} else {
-		fmt.Println("Done")
-	}
+	_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+apt+" update > /dev/null 2>&1", "ksh").Output()
+	fmt.Println("Done")
 
 	//Install apt-required 2
 	for x := 0; x < len(apt_required_2); x++ {
@@ -196,5 +192,40 @@ func main() {
 	}
 
 	//check/modify /etc/apt/sources.list.d/kubernetes.list
+
+	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;./verifyKList.sh", prog, tmp, tmp2, "ksh").Output()
+	if err != nil {
+		fmt.Println("Error : " + err.Error())
+	} else {
+		fmt.Println("Done")
+	}
+
+	/*file := "/etc/apt/sources.list.d/kubernetes.list"
+
+	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;! -f "+file, "ksh").Output()
+	if err != nil {
+		fmt.Println(prog + ": " + file + " not present.  Creating...\\c")
+		_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;touch "+file+";cat << SEOF > $file", "ksh").Output()
+
+		//Added by Aporeto setup `date`
+		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;deb http://apt.kubernetes.io/ kubernetes-xenial main", "ksh").Output()
+		if err != nil {
+			fmt.Println("Error : " + err.Error())
+		} else {
+			fmt.Println("Done")
+		}
+
+		//Aporeto-end
+		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;SEOF", "ksh").Output()
+
+	} else {
+		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;deb http://apt.kubernetes.io/ kubernetes-xenial main", "ksh").Output()
+		if err != nil {
+			fmt.Println("Error : " + err.Error())
+		} else {
+			fmt.Println("Done")
+		}
+
+	}*/
 
 }
