@@ -140,6 +140,7 @@ func main() {
 	//APT-Related Requirements
 	apt_required_1 := [...]string{"ebtables", "ethtool"}
 	//apt_required_2 := [...]string{"docker.io", "golang", "git", "apt-transport-https", "curl"}
+	apt_required_2 := [...]string{"docker.io", "git", "apt-transport-https", "curl"}
 	//k8s_required := [...]string{"kubelet", "kubeadm", "kubectl"}
 
 	//Install apt-required
@@ -155,5 +156,45 @@ func main() {
 			fmt.Println("Done")
 		}
 	}
+
+	//Perform APT Update
+	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+apt+" update > /dev/null 2>&1", "ksh").Output()
+	if err != nil {
+		fmt.Println("Error : " + err.Error())
+	} else {
+		fmt.Println("Done")
+	}
+
+	//Install apt-required 2
+	for x := 0; x < len(apt_required_2); x++ {
+		value := apt_required_2[x]
+		fmt.Println("Installing " + value + "...\\c")
+
+		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+apt+" install -y "+value+" -q > /dev/null 2>&1", "ksh").Output()
+		if err != nil {
+			fmt.Println("Error : " + err.Error())
+		} else {
+			fmt.Println("Done")
+		}
+	}
+
+	//Restart Docker
+	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;systemctl start docker >/dev/null 2>&1 ; sleep 2;$systemctl enable docker >/dev/null 2>&1 ; sleep 2", "ksh").Output()
+	if err != nil {
+		fmt.Println("Error : " + err.Error())
+	} else {
+		fmt.Println("Done")
+	}
+
+	//Adding apt-key
+	fmt.Println("Adding apt-key...\\c")
+	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - >/dev/null 2>&1", "ksh").Output()
+	if err != nil {
+		fmt.Println("Error : " + err.Error())
+	} else {
+		fmt.Println("Done")
+	}
+
+	//check/modify /etc/apt/sources.list.d/kubernetes.list
 
 }
