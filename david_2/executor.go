@@ -50,9 +50,9 @@ func main() {
 	// //ostype := `/bin/uname -a | $awk '{print$1" "substr($3,1,1)}'`
 	// adminconf := "/etc/kubernetes/admin.conf"
 	// config := usr.HomeDir + "/.kube/config"
-	// kubeadm := "/usr/bin/kubeadm"
-	// kubelet := "/usr/bin/kubelet"
-	// kubectl := "/usr/bin/kubectl"
+	kubeadm := "/usr/bin/kubeadm"
+	kubelet := "/usr/bin/kubelet"
+	kubectl := "/usr/bin/kubectl"
 
 	log := "/var/tmp/" + prog + ".log.date " + nowtime.Format("2006-Mar-02 15:04:05")
 	out := "./Install_Readme_" + prog + ".log.date " + nowtime.Format("2006-Mar-02 15:04:05")
@@ -142,7 +142,7 @@ func main() {
 	apt_required_1 := [...]string{"ebtables", "ethtool"}
 	//apt_required_2 := [...]string{"docker.io", "golang", "git", "apt-transport-https", "curl"}
 	apt_required_2 := [...]string{"docker.io", "git", "apt-transport-https", "curl"}
-	//k8s_required := [...]string{"kubelet", "kubeadm", "kubectl"}
+	k8s_required := [...]string{"kubelet", "kubeadm", "kubectl"}
 
 	//Install apt-required
 
@@ -206,5 +206,74 @@ func main() {
 	}
 	//delete verifyList.sh
 	os.Remove("verifyKList.sh")
+
+	//Perform APT Update
+	_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+apt+" update > /dev/null 2>&1", "ksh").Output()
+	fmt.Println("Done")
+
+	//Install K8S Required
+	for x := 0; x < len(k8s_required); x++ {
+		value := k8s_required[x]
+		fmt.Println("Installing " + value + "...\\c")
+
+		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+apt+" install -y "+value+" -q > /dev/null 2>&1", "ksh").Output()
+		if err != nil {
+			fmt.Println("Error : " + err.Error())
+		} else {
+			fmt.Println("Done")
+		}
+	}
+
+	//Check for kubeadm, kubelet, kubectl
+
+	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;! -x "+kubeadm, "ksh").Output()
+	if err != nil {
+		os.Remove(tmp)
+		os.Remove(tmp2)
+		fmt.Println(prog + ": SANITY: /usr/bin/kubeadm missing!  Quitting...")
+		os.Exit(1)
+	}
+
+	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;! -x "+kubelet, "ksh").Output()
+	if err != nil {
+		os.Remove(tmp)
+		os.Remove(tmp2)
+		fmt.Println(prog + ": SANITY: /usr/bin/kubelet missing!  Quitting...")
+		os.Exit(1)
+	}
+
+	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;! -x "+kubectl, "ksh").Output()
+	if err != nil {
+		os.Remove(tmp)
+		os.Remove(tmp2)
+		fmt.Println(prog + ": SANITY: /usr/bin/kubectl missing!  Quitting...")
+		os.Exit(1)
+	}
+
+	//Clone cri-tools repo
+	fmt.Println("Cloning git repo for cri-tools...\\c")
+	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;git clone https://github.com/kubernetes-incubator/cri-tools.git >/dev/null 2>&1", "ksh").Output()
+	if err != nil {
+		fmt.Println("Error fetching from GIT : " + err.Error())
+		os.Exit(1)
+	} else {
+		fmt.Println("Done")
+	}
+
+	//Begin readme
+
+	//generate readme.sh
+	ioutil.WriteFile("readme.sh", []byte("PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\"export PATH\n\ncat << REOF > $1\n#-----------------------------------------------------------------------------------------\n# Added by Aporeto setup `date`\n#-----------------------------------------------------------------------------------------\nCommands you may wish to try:\n\n 1) kubectl get pods --all-namespaces (check to see if pods are running)\n	2) kubectl -n guestbook get svc front-end (interact with frontend)\n	3) kubectl delete namespace guestbook (to remove the guestbook)\n\n#-----------------------------------------------------------------------------------------\nPlease review the following file just created for additional information.\n#-----------------------------------------------------------------------------------------\n\n\n\n REOF"), 7777)
+	//give permission
+	_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;chmod 777 readme.sh", "ksh").Output()
+	//execute
+	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;./readme.sh", out, "ksh").Output()
+	if err != nil {
+		fmt.Println("Error : " + err.Error())
+	} else {
+		fmt.Println("Done")
+	}
+	//delete readme.sh
+	os.Remove("readme.sh")
 
 }
