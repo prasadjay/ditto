@@ -42,9 +42,9 @@ func main() {
 	// nsuf := "." + prog + ".1"
 	apt := "/usr/bin/apt-get"
 	nawk := "/usr/bin/nawk"
-	// apoctl := "/usr/bin/apoctl"
-	// enforcerd := "/usr/sbin/enforcerd"
-	// systemctl := "/bin/systemctl"
+	apoctl := "/usr/bin/apoctl"
+	enforcerd := "/usr/sbin/enforcerd"
+	systemctl := "/bin/systemctl"
 	// awk := "/usr/bin/nawk"
 	swapoff := "/sbin/swapoff"
 	curl := "/usr/bin/curl"
@@ -156,6 +156,7 @@ func main() {
 		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+apt+" install -y "+value+" -q > /dev/null 2>&1", "ksh").Output()
 		if err != nil {
 			fmt.Println("Error : " + err.Error())
+			os.Exit(1)
 		} else {
 			fmt.Println("Done")
 		}
@@ -173,15 +174,17 @@ func main() {
 		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+apt+" install -y "+value+" -q > /dev/null 2>&1", "ksh").Output()
 		if err != nil {
 			fmt.Println("Error : " + err.Error())
+			os.Exit(1)
 		} else {
 			fmt.Println("Done")
 		}
 	}
 
 	//Restart Docker
-	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;systemctl start docker >/dev/null 2>&1 ; sleep 2;$systemctl enable docker >/dev/null 2>&1 ; sleep 2", "ksh").Output()
+	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+systemctl+" start docker >/dev/null 2>&1 ; sleep 2;"+systemctl+" enable docker >/dev/null 2>&1 ; sleep 2", "ksh").Output()
 	if err != nil {
 		fmt.Println("Error restarting dockers : " + err.Error())
+		os.Exit(1)
 	} else {
 		fmt.Println("Done restarting dockers")
 	}
@@ -191,6 +194,7 @@ func main() {
 	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - >/dev/null 2>&1", "ksh").Output()
 	if err != nil {
 		fmt.Println("Error : " + err.Error())
+		os.Exit(1)
 	} else {
 		fmt.Println("Done")
 	}
@@ -204,6 +208,7 @@ func main() {
 	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;./verifyKList.sh", prog, tmp, tmp2, "ksh").Output()
 	if err != nil {
 		fmt.Println("Error verify Kubernetes list : " + err.Error())
+		os.Exit(1)
 	} else {
 		fmt.Println("Done verifying Kubernetes list")
 	}
@@ -222,6 +227,7 @@ func main() {
 		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+apt+" install -y "+value+" -q > /dev/null 2>&1", "ksh").Output()
 		if err != nil {
 			fmt.Println("Error : " + err.Error())
+			os.Exit(1)
 		} else {
 			fmt.Println("Done")
 		}
@@ -254,14 +260,14 @@ func main() {
 	}
 
 	//Clone cri-tools repo
-	/*fmt.Print("Cloning git repo for cri-tools...\\c")
+	fmt.Print("Cloning git repo for cri-tools...\\c")
 	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;git clone https://github.com/kubernetes-incubator/cri-tools.git >/dev/null 2>&1").Output()
 	if err != nil {
 		fmt.Println("Error fetching from GIT : " + err.Error())
 		os.Exit(1)
 	} else {
 		fmt.Println("Done")
-	}*/
+	}
 
 	//Begin readme
 
@@ -288,19 +294,21 @@ func main() {
 	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;kubeadm init --pod-network-cidr=$"+cidr+" >> $out", "ksh").Output()
 	if err != nil {
 		fmt.Println("Error : " + err.Error())
+		os.Exit(1)
 	} else {
 		fmt.Println("Done")
 	}
 
-	//Setup $HOME
-	fmt.Print("Kubeadm Init with " + cidr + " starting and key writeout...")
+	/*fmt.Print("Kubeadm Init with " + cidr + " starting and key writeout...")
 	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;kubeadm init --pod-network-cidr=$"+cidr+" >> $out", "ksh").Output()
 	if err != nil {
 		fmt.Println("Error : " + err.Error())
+		os.Exit(1)
 	} else {
 		fmt.Println("Done")
-	}
+	}*/
 
+	//Setup $HOME
 	_, err = os.Stat(homeDir + "/.kube")
 
 	// See if directory exists.
@@ -309,18 +317,21 @@ func main() {
 		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;mkdir -p $HOME/.kube", "ksh").Output()
 		if err != nil {
 			fmt.Println("Error creating .kube folder: " + err.Error())
+			os.Exit(1)
 		} else {
 			fmt.Println("Done")
 		}
 		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;cp -i /etc/kubernetes/admin.conf $HOME/.kube/config", "ksh").Output()
 		if err != nil {
 			fmt.Println("Error copying kubernetes admin config: " + err.Error())
+			os.Exit(1)
 		} else {
 			fmt.Println("Done")
 		}
 		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;chown $("+id+" -u):$("+id+" -g) $HOME/.kube/config", "ksh").Output()
 		if err != nil {
 			fmt.Println("Error chown " + id + " to user and group : " + err.Error())
+			os.Exit(1)
 		} else {
 			fmt.Println("Done")
 		}
@@ -328,6 +339,7 @@ func main() {
 		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";kubectl apply -f https://docs.projectcalico.org/v2.6/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml", "ksh").Output()
 		if err != nil {
 			fmt.Println("Error chown " + id + " to user and group : " + err.Error())
+			os.Exit(1)
 		} else {
 			fmt.Println("Done")
 		}
@@ -341,6 +353,7 @@ func main() {
 	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";kubectl taint nodes --all node-role.kubernetes.io/master- >/dev/null 2>&1", "ksh").Output()
 	if err != nil {
 		fmt.Println("Error untaint master " + id + " to user and group : " + err.Error())
+		os.Exit(1)
 	} else {
 		fmt.Println("Done")
 	}
@@ -360,6 +373,7 @@ func main() {
 		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";kubectl create namespace guestbook", "ksh").Output()
 		if err != nil {
 			fmt.Println("Error : " + err.Error())
+			os.Exit(1)
 		} else {
 			fmt.Println("Done")
 		}
@@ -368,14 +382,18 @@ func main() {
 		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";kubectl apply -n guestbook -f \"https://raw.githubusercontent.com/dnester/guestbook/master/guestbook.yaml\"", "ksh").Output()
 		if err != nil {
 			fmt.Println("Error : " + err.Error())
+			os.Exit(1)
 		} else {
 			fmt.Println("Done")
 		}
 	} else if app_r == "n" {
+		//nothing do herer
+	} else {
 		fmt.Print("Creating Namespace....")
 		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";kubectl create namespace guestbook", "ksh").Output()
 		if err != nil {
 			fmt.Println("Error : " + err.Error())
+			os.Exit(1)
 		} else {
 			fmt.Println("Done")
 		}
@@ -384,15 +402,35 @@ func main() {
 		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";kubectl apply -n guestbook -f \"https://raw.githubusercontent.com/dnester/guestbook/master/guestbook.yaml\"", "ksh").Output()
 		if err != nil {
 			fmt.Println("Error : " + err.Error())
+			os.Exit(1)
 		} else {
 			fmt.Println("Done")
 		}
-	} else {
-		fmt.Println("Invalid selection, only Y or N is allowed.")
-		os.Exit(1)
 	}
 
 	//At this point you should have a fully-functional kubernetes cluster on which you can run workloads.
+	//Now we will download and install the required Aporeto components.
+
+	aposoft_r := ""
+	fmt.Print("Ready to download the required Aporeto components? [y/n] : ")
+	_, _ = fmt.Scanln(&aposoft_r)
+
+	//Take users input for downloading apoctl and enforcerd
+
+	aposoft_r = strings.ToLower(aposoft_r)
+
+	switch aposoft_r {
+	case "y":
+		install_apoctl(apoctl, enforcerd, systemctl)
+		break
+	case "n":
+		//nothing to do.. continue
+		break
+	default:
+		install_apoctl(apoctl, enforcerd, systemctl)
+		break
+	}
+
 	//Final message.
 
 	fmt.Println("")
@@ -412,4 +450,107 @@ func main() {
 	//============================================================================
 	// 	END of dk8s
 	//============================================================================
+}
+
+func install_apoctl(apoctl, enforcerd, systemctl string) {
+	fmt.Println("made it here")
+
+	fmt.Print("Verifying apoctl... ")
+	var outBytes []byte
+	_, err := exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;! -x "+apoctl, "ksh").Output()
+	if err != nil {
+		fmt.Print("Downloading apoctl... ")
+		_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;curl -o "+apoctl+" https://download.aporeto.com/releases/release-1.3.1-r9/apoctl/linux/apoctl").Output()
+		_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;chmod 775 "+apoctl, "ksh").Output()
+		fmt.Println("Done")
+	} else {
+		fmt.Println("Nothing to do")
+	}
+
+	//Enforcerd
+	fmt.Print("Verifying Enforcerd... ")
+	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;! -x "+enforcerd, "ksh").Output()
+	if err != nil {
+		fmt.Print("Downloading Enforcerd... ")
+		_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;curl -o enforcerd.amd64.deb https://download.aporeto.com/releases/release-1.3.1-r9/enforcerd/linux/enforcerd.amd64.deb").Output()
+		_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;apt install -y ./enforcerd.amd64.deb -q ; sleep 2", "ksh").Output()
+		fmt.Println("Done")
+	} else {
+		fmt.Println("Nothing to do")
+	}
+
+	//Let's register our Demo Namespace
+	r_username := ""
+	fmt.Print("Please enter your Aporeto username: : ")
+	_, _ = fmt.Scanln(&r_username)
+
+	//apoctl registration
+
+	var TOKEN string
+	outBytes, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;apoctl auth aporeto --account "+r_username+" --validity 2000m").Output()
+	if err != nil {
+		fmt.Println("Error : Failed to get token. Reason : " + err.Error())
+		os.Exit(1)
+	} else {
+		TOKEN = string(outBytes)
+		fmt.Println("TOKEN : " + TOKEN)
+	}
+
+	//Get namespace
+	NAMESPACE := ""
+	fmt.Print("Please enter your namespace : ")
+	_, _ = fmt.Scanln(&NAMESPACE)
+
+	var curlme string
+	outBytes, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;curl -s -X POST -H \"Content-Type: application/json\" -H \"Authorization: Bearer "+TOKEN+"\" -d '{\"name\":\"apodemo\",\"targetNamespace\":\""+NAMESPACE+"\"}' \"https://api.console.aporeto.com/kubernetesclusters?\" | grep -Po '\"kubernetesDefinitions\":(\\d*?,|.*?[^\\]\",)' | awk -F\" '{print$4}' >> curlme").Output()
+	if err != nil {
+		fmt.Println("Error : Failed to execute curl. Reason : " + err.Error())
+		os.Exit(1)
+	} else {
+		curlme = string(outBytes)
+		fmt.Println("curlme : " + curlme)
+	}
+	_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;mkdir ./myaporeto/;/usr/bin/base64 -d curlme >> ./myaporeto/myfiles").Output()
+	_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;mv myaporeto/myfiles myaporeto/myfiles.tar.gz ; cd myaporeto;gzip -df myfiles.tar.gz;tar xvf myfiles.tar;").Output()
+
+	files, err := ioutil.ReadDir("./")
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+
+	for _, f := range files {
+		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;kubectl create -f "+f.Name()).Output()
+		if err != nil {
+			fmt.Println("Error : Kubernates Create : " + f.Name() + " Reason : " + err.Error())
+			os.Exit(1)
+		} else {
+			fmt.Println("Done : " + f.Name())
+		}
+	}
+
+	time.Sleep(5 * time.Second)
+
+	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+systemctl+" enable enforcerd").Output()
+	if err != nil {
+		fmt.Println("Error : Enabling enforcerd. Reason : " + err.Error())
+		os.Exit(1)
+	} else {
+		fmt.Println("Enabled enforcerd")
+	}
+
+	time.Sleep(5 * time.Second)
+
+	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+systemctl+" start enforcerd").Output()
+	if err != nil {
+		fmt.Println("Error : Starting enforcerd. Reason :  " + err.Error())
+		os.Exit(1)
+	} else {
+		fmt.Println("Started enforcerd")
+	}
+
+	time.Sleep(5 * time.Second)
+
+	fmt.Println("Services restarted.  Please check the aporeto web console for the registered enforcerd agents")
+
 }
