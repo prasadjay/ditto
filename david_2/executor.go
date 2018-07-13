@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"os/user"
 	"runtime"
 	"strconv"
@@ -79,4 +80,10 @@ func main() {
 		return
 	}
 
+	outBytes, err := exec.Command("/bin/ksh", "! -x $curl").Output()
+	if err != nil {
+		fmt.Println(err.Error())
+	} else {
+		fmt.Println(string(outBytes))
+	}
 }
