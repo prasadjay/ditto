@@ -8,6 +8,7 @@ import (
 	"os/user"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -31,7 +32,9 @@ func main() {
 
 	InArguments := os.Args
 
-	prog := InArguments[0]
+	tokens := strings.Split(InArguments[0], "/")
+	prog := tokens[len(tokens)-1]
+	fmt.Println(prog)
 
 	tmp := "/tmp/" + prog + "." + strconv.Itoa(os.Getpid())
 	tmp2 := "/tmp/." + prog + "." + strconv.Itoa(os.Getpid()) + ".2"
@@ -252,13 +255,13 @@ func main() {
 
 	//Clone cri-tools repo
 	fmt.Println("Cloning git repo for cri-tools...\\c")
-	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;git clone https://github.com/kubernetes-incubator/cri-tools.git >/dev/null 2>&1").Output()
+	/*_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;git clone https://github.com/kubernetes-incubator/cri-tools.git >/dev/null 2>&1").Output()
 	if err != nil {
 		fmt.Println("Error fetching from GIT : " + err.Error())
 		os.Exit(1)
 	} else {
 		fmt.Println("Done")
-	}
+	}*/
 
 	//Begin readme
 
@@ -274,6 +277,6 @@ func main() {
 		fmt.Println("Done")
 	}
 	//delete readme.sh
-	os.Remove("readme.sh")
+	//os.Remove("readme.sh")
 
 }
