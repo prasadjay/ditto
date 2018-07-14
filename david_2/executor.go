@@ -537,7 +537,6 @@ func install_apoctl(apoctl, enforcerd, systemctl, apt, curl string, config map[s
 	if err != nil {
 		fmt.Println(err.Error())
 		fmt.Println("Resource Kubernetes cluster already available. Please delete it from app console first...")
-		os.Exit(1)
 	} else {
 		json.Unmarshal([]byte(response), &mapObject)
 		ioutil.WriteFile("./curlme", []byte(mapObject["kubernetesDefinitions"].(string)), 0666)
