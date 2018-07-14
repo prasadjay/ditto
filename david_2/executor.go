@@ -52,6 +52,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	config := GetConfig()
+
 	tmp := "/tmp/" + prog + "." + strconv.Itoa(os.Getpid())
 	tmp2 := "/tmp/." + prog + "." + strconv.Itoa(os.Getpid()) + ".2"
 	// osuf := "." + prog + ".orig"
@@ -407,13 +409,13 @@ func main() {
 
 	switch aposoft_r {
 	case "y":
-		install_apoctl(apoctl, enforcerd, systemctl, apt, curl)
+		install_apoctl(apoctl, enforcerd, systemctl, apt, curl, config)
 		break
 	case "n":
 		//nothing to do.. continue
 		break
 	default:
-		install_apoctl(apoctl, enforcerd, systemctl, apt, curl)
+		install_apoctl(apoctl, enforcerd, systemctl, apt, curl, config)
 		break
 	}
 
@@ -438,7 +440,7 @@ func main() {
 	//============================================================================
 }
 
-func install_apoctl(apoctl, enforcerd, systemctl, apt, curl string) {
+func install_apoctl(apoctl, enforcerd, systemctl, apt, curl string, config map[string]interface{}) {
 	fmt.Println("made it here")
 
 	fmt.Print("Verifying apoctl... ")
@@ -467,13 +469,17 @@ func install_apoctl(apoctl, enforcerd, systemctl, apt, curl string) {
 	}
 
 	//Let's register our Demo Namespace
-	r_username := ""
-	fmt.Print("Please enter your Aporeto username: : ")
-	_, _ = fmt.Scanln(&r_username)
+	r_username := config["username"].(string)
+	if r_username == "" {
+		fmt.Print("Please enter your Aporeto username: : ")
+		_, _ = fmt.Scanln(&r_username)
+	}
 
-	r_password := ""
-	fmt.Print("Please enter your Aporeto password: : ")
-	_, _ = fmt.Scanln(&r_password)
+	r_password := config["password"].(string)
+	if r_password == "" {
+		fmt.Print("Please enter your Aporeto password: : ")
+		_, _ = fmt.Scanln(&r_password)
+	}
 
 	//apoctl registration
 
@@ -488,9 +494,11 @@ func install_apoctl(apoctl, enforcerd, systemctl, apt, curl string) {
 	}
 
 	//Get namespace
-	NAMESPACE := ""
-	fmt.Print("Please enter your namespace : ")
-	_, _ = fmt.Scanln(&NAMESPACE)
+	NAMESPACE := config["namespace"].(string)
+	if NAMESPACE == "" {
+		fmt.Print("Please enter your namespace : ")
+		_, _ = fmt.Scanln(&NAMESPACE)
+	}
 
 	/*var curlme string
 	outBytes, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+curl+" -s -X POST -H \"Content-Type: application/json\" -H \"Authorization: Bearer "+TOKEN+"\" -d '{\"name\":\"apodemo3\",\"targetNamespace\":\""+NAMESPACE+"\"}' \"https://api.console.aporeto.com/kubernetesclusters?\" | grep -Po '\"kubernetesDefinitions\":(\\d*?,|.*?[^\\]\",)' | awk -F\" '{print$4}' >> curlme").Output()
@@ -644,6 +652,26 @@ func SendRequest(Method string, url string, BodyString string, headerTokens map[
 	} else {
 		//fmt.Println("HTTP_DefaultRequest successful.")
 		//fmt.Println("HTTP Response : " + response)
+	}
+
+	return
+}
+
+func GetConfig() (config map[string]interface{}) {
+	config = make(map[string]interface{})
+
+	content, err := ioutil.ReadFile("./config.json")
+
+	if err != nil {
+		//config file not Available// regenerate it...
+		fmt.Println("WARNING : Configuration file not found. Generating an empty configuration file. Please update username and password.")
+		config["username"] = ""
+		config["password"] = ""
+		config["namespace"] = ""
+		byteArray, _ := json.Marshal(config)
+		_ = ioutil.WriteFile("./config.json", byteArray, 0777)
+	} else {
+		json.Unmarshal(content, &config)
 	}
 
 	return
