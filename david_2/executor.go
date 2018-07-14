@@ -62,7 +62,7 @@ func main() {
 	kubectl := "/usr/bin/kubectl"
 
 	log := "/var/tmp/" + prog + ".log.date " + nowtime.Format("2006-Mar-02 15:04:05")
-	out := "./Install_Readme_" + prog + ".log.date " + nowtime.Format("2006-Mar-02 15:04:05")
+	out := "./Install_Readme_" + prog + ".log." + nowtime.Format(time.RFC3339)
 	//version := "1.00"
 
 	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;! -x "+curl, "ksh").Output()
