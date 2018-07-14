@@ -498,7 +498,7 @@ func install_apoctl(apoctl, enforcerd, systemctl, apt, curl string) {
 	headerTokens["Content-Type"] = "application/json"
 
 	postMap := make(map[string]interface{})
-	postMap["name"] = "apodemo49"
+	postMap["name"] = "apodemo"
 	postMap["targetNamespace"] = NAMESPACE
 
 	bytess, _ := json.Marshal(postMap)
@@ -583,8 +583,6 @@ func SendRequest(Method string, url string, BodyString string, headerTokens map[
 
 		if err != nil {
 			if retryCount > 0 && !strings.Contains(err.Error(), "permission") && (strings.Contains(err.Error(), "dial tcp") || strings.Contains(err.Error(), "EOF")) {
-				//fmt.Println("Error : " + err.Error() + " : Retrying Recursively Attempt : " + strconv.Itoa(retryCount))
-				//logger.Log_ACT(("Error : " + err.Error() + " : Retrying Recursively Attempt : " + strconv.Itoa(retryCount)), logger.Debug, sessionId, FlowData["SMOOTHFLOW_FLOWNAME"].(string), FlowData)
 				err = nil
 				time.Sleep(1 * time.Second)
 				return SendRequest(Method, url, BodyString, headerTokens, excludeResponseCodes, (retryCount - 1))
