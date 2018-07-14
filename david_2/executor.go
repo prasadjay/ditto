@@ -548,13 +548,13 @@ func install_apoctl(apoctl, enforcerd, systemctl, apt, curl string) {
 
 	time.Sleep(5 * time.Second)
 
-	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+systemctl+" start enforcerd").Output()
-	if err != nil {
+	_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+systemctl+" start enforcerd").Output()
+	/*if err != nil {
 		fmt.Println("Error : Starting enforcerd. Reason :  " + err.Error())
 		os.Exit(1)
 	} else {
 		fmt.Println("Started enforcerd")
-	}
+	}*/
 
 	time.Sleep(5 * time.Second)
 
