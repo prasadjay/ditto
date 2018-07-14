@@ -17,9 +17,10 @@ import (
 )
 
 func main() {
+	//check for OS
 	if runtime.GOOS != "linux" {
 		fmt.Println("Not supported version of operating system. Found : " + runtime.GOOS + ". Required: Linux Ubuntu")
-		//return
+		os.Exit(1)
 	}
 
 	hostname, _ := os.Hostname()
@@ -39,6 +40,17 @@ func main() {
 
 	tokens := strings.Split(InArguments[0], "/")
 	prog := tokens[len(tokens)-1]
+
+	//check for user
+	cmdUser := exec.Command("id", "-u")
+	usrOut, _ := cmdUser.Output()
+
+	i, _ := strconv.Atoi(string(usrOut[:len(usrOut)-1]))
+
+	if i != 0 {
+		fmt.Println(prog + " : FATAL: must be run as root")
+		os.Exit(1)
+	}
 
 	tmp := "/tmp/" + prog + "." + strconv.Itoa(os.Getpid())
 	tmp2 := "/tmp/." + prog + "." + strconv.Itoa(os.Getpid()) + ".2"
@@ -295,7 +307,7 @@ func main() {
 	fmt.Print("For our cluster, please enter a CIDR address (example: 192.168.1.1/24): ")
 	_, _ = fmt.Scanln(&cidr)
 	fmt.Print("Kubeadm Init with " + cidr + " starting and key writeout...")
-	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;kubeadm init --pod-network-cidr="+cidr+" >> "+out).Output()
+	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;kubeadm init --pod-network-cidr="+cidr+" >> "+out+" 2>&1").Output()
 	if err != nil {
 		fmt.Println("Pods already exists... Please remove first...")
 	} else {
