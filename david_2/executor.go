@@ -61,7 +61,7 @@ func main() {
 	kubelet := "/usr/bin/kubelet"
 	kubectl := "/usr/bin/kubectl"
 
-	log := "/var/tmp/" + prog + ".log.date " + nowtime.Format("2006-Mar-02 15:04:05")
+	log := "/var/tmp/" + prog + ".log.date " + nowtime.Format(time.RFC3339)
 	out := "./Install_Readme_" + prog + ".log." + nowtime.Format(time.RFC3339)
 	//version := "1.00"
 
