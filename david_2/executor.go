@@ -295,8 +295,12 @@ func main() {
 	fmt.Print("For our cluster, please enter a CIDR address (example: 192.168.1.1/24): ")
 	_, _ = fmt.Scanln(&cidr)
 	fmt.Print("Kubeadm Init with " + cidr + " starting and key writeout...")
-	_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;kubeadm init --pod-network-cidr="+cidr+" >> "+out).Output()
-	fmt.Println("Done")
+	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;kubeadm init --pod-network-cidr="+cidr+" >> "+out).Output()
+	if err != nil {
+		fmt.Println("Pods already exists... Please remove first...")
+	} else {
+		fmt.Println("Done")
+	}
 
 	//Setup $HOME
 	_, err = os.Stat(homeDir + "/.kube")
@@ -528,8 +532,7 @@ func install_apoctl(apoctl, enforcerd, systemctl, apt, curl string) {
 		if !strings.Contains(f.Name(), "myfiles") { //excluding myfiles.tar
 			_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;kubectl create -f ./myaporeto/"+f.Name()).Output()
 			if err != nil {
-				fmt.Println("Error : Kubernates Create : ./myaporeto/" + f.Name() + " Reason : " + err.Error())
-				os.Exit(1)
+				fmt.Println("Pod for " + f.Name() + " already exists... Please remove it first...")
 			} else {
 				fmt.Println("Done : " + f.Name())
 			}
