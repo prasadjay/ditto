@@ -370,7 +370,7 @@ func main() {
 	fmt.Println("Done")
 
 	fmt.Print("Bind to Kubernetes...")
-	_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";kubectl create clusterrolebinding aporeto --clusterrole=cluster-admin --serviceaccount=kube-system:default >/dev/null 2>&1", "ksh").Output()
+	_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";kubectl create clusterrolebinding aporeto --clusterrole=cluster-admin --serviceaccount=kube-system:default >/dev/null 2>&1").Output()
 	fmt.Println("Done")
 
 	//Deploy application
