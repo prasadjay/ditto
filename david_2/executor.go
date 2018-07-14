@@ -1,8 +1,12 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/user"
@@ -387,13 +391,13 @@ func main() {
 
 	switch aposoft_r {
 	case "y":
-		install_apoctl(apoctl, enforcerd, systemctl, apt)
+		install_apoctl(apoctl, enforcerd, systemctl, apt, curl)
 		break
 	case "n":
 		//nothing to do.. continue
 		break
 	default:
-		install_apoctl(apoctl, enforcerd, systemctl, apt)
+		install_apoctl(apoctl, enforcerd, systemctl, apt, curl)
 		break
 	}
 
@@ -418,7 +422,7 @@ func main() {
 	//============================================================================
 }
 
-func install_apoctl(apoctl, enforcerd, systemctl, apt string) {
+func install_apoctl(apoctl, enforcerd, systemctl, apt, curl string) {
 	fmt.Println("made it here")
 
 	fmt.Print("Verifying apoctl... ")
@@ -427,7 +431,7 @@ func install_apoctl(apoctl, enforcerd, systemctl, apt string) {
 	_, err := exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+apoctl, "ksh").Output()
 	if err != nil {
 		fmt.Print("Downloading apoctl... ")
-		_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;curl -o "+apoctl+" https://download.aporeto.com/releases/release-1.3.1-r9/apoctl/linux/apoctl").Output()
+		_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+curl+" -o "+apoctl+" https://download.aporeto.com/releases/release-1.3.1-r9/apoctl/linux/apoctl").Output()
 		_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;chmod 775 "+apoctl, "ksh").Output()
 		fmt.Println("Done")
 	} else {
@@ -439,7 +443,7 @@ func install_apoctl(apoctl, enforcerd, systemctl, apt string) {
 	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+enforcerd, "ksh").Output()
 	if err != nil {
 		fmt.Print("Downloading Enforcerd... ")
-		_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;curl -o enforcerd.amd64.deb https://download.aporeto.com/releases/release-1.3.1-r9/enforcerd/linux/enforcerd.amd64.deb").Output()
+		_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+curl+" -o enforcerd.amd64.deb https://download.aporeto.com/releases/release-1.3.1-r9/enforcerd/linux/enforcerd.amd64.deb").Output()
 		_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+apt+" install -y ./enforcerd.amd64.deb -q ; sleep 2", "ksh").Output()
 		fmt.Println("Done")
 	} else {
@@ -451,10 +455,14 @@ func install_apoctl(apoctl, enforcerd, systemctl, apt string) {
 	fmt.Print("Please enter your Aporeto username: : ")
 	_, _ = fmt.Scanln(&r_username)
 
+	r_password := ""
+	fmt.Print("Please enter your Aporeto password: : ")
+	_, _ = fmt.Scanln(&r_password)
+
 	//apoctl registration
 
 	var TOKEN string
-	outBytes, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;apoctl auth aporeto --account "+r_username+" --validity 2000m").Output()
+	outBytes, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;apoctl auth aporeto --account "+r_username+" --password "+r_password+" --validity 2000m").Output()
 	if err != nil {
 		fmt.Println("Error : Failed to get token. Reason : " + err.Error())
 		os.Exit(1)
@@ -468,31 +476,63 @@ func install_apoctl(apoctl, enforcerd, systemctl, apt string) {
 	fmt.Print("Please enter your namespace : ")
 	_, _ = fmt.Scanln(&NAMESPACE)
 
-	var curlme string
-	outBytes, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;curl -s -X POST -H \"Content-Type: application/json\" -H \"Authorization: Bearer "+TOKEN+"\" -d '{\"name\":\"apodemo\",\"targetNamespace\":\""+NAMESPACE+"\"}' \"https://api.console.aporeto.com/kubernetesclusters?\" | grep -Po '\"kubernetesDefinitions\":(\\d*?,|.*?[^\\]\",)' | awk -F\" '{print$4}' >> curlme").Output()
+	/*var curlme string
+	outBytes, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+curl+" -s -X POST -H \"Content-Type: application/json\" -H \"Authorization: Bearer "+TOKEN+"\" -d '{\"name\":\"apodemo3\",\"targetNamespace\":\""+NAMESPACE+"\"}' \"https://api.console.aporeto.com/kubernetesclusters?\" | grep -Po '\"kubernetesDefinitions\":(\\d*?,|.*?[^\\]\",)' | awk -F\" '{print$4}' >> curlme").Output()
 	if err != nil {
 		fmt.Println("Error : Failed to execute curl. Reason : " + err.Error())
+		fmt.Println("Another object exists with the same key... Please delete your cluster before you reinitiate..")
 		os.Exit(1)
 	} else {
 		curlme = string(outBytes)
 		fmt.Println("curlme : " + curlme)
+	}*/
+
+	URL := "https://api.console.aporeto.com/kubernetesclusters"
+	Method := "POST"
+	retryCount := 0
+	excludeResponseCodes := make([]string, 1)
+	excludeResponseCodes[0] = "201"
+
+	headerTokens := make(map[string]string)
+	headerTokens["Authorization"] = "Bearer " + TOKEN
+	headerTokens["Content-Type"] = "application/json"
+
+	postMap := make(map[string]interface{})
+	postMap["name"] = "apodemo49"
+	postMap["targetNamespace"] = NAMESPACE
+
+	bytess, _ := json.Marshal(postMap)
+
+	mapObject := make(map[string]interface{})
+
+	err, response := SendRequest(Method, URL, string(bytess), headerTokens, excludeResponseCodes, retryCount)
+	if err != nil {
+		fmt.Println(err.Error())
+		fmt.Println("Resource Kubernetes cluster already available. Please delete it from app console first...")
+		os.Exit(1)
+	} else {
+		json.Unmarshal([]byte(response), &mapObject)
+		ioutil.WriteFile("./curlme", []byte(mapObject["kubernetesDefinitions"].(string)), 0666)
 	}
+
 	_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;mkdir ./myaporeto/;/usr/bin/base64 -d curlme >> ./myaporeto/myfiles").Output()
 	_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;mv myaporeto/myfiles myaporeto/myfiles.tar.gz ; cd myaporeto;gzip -df myfiles.tar.gz;tar xvf myfiles.tar;").Output()
 
-	files, err := ioutil.ReadDir("./")
+	files, err := ioutil.ReadDir("./myaporeto/")
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
 
 	for _, f := range files {
-		_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;kubectl create -f "+f.Name()).Output()
-		if err != nil {
-			fmt.Println("Error : Kubernates Create : " + f.Name() + " Reason : " + err.Error())
-			os.Exit(1)
-		} else {
-			fmt.Println("Done : " + f.Name())
+		if !strings.Contains(f.Name(), "myfiles") { //excluding myfiles.tar
+			_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;kubectl create -f ./myaporeto/"+f.Name()).Output()
+			if err != nil {
+				fmt.Println("Error : Kubernates Create : ./myaporeto/" + f.Name() + " Reason : " + err.Error())
+				os.Exit(1)
+			} else {
+				fmt.Println("Done : " + f.Name())
+			}
 		}
 	}
 
@@ -520,4 +560,78 @@ func install_apoctl(apoctl, enforcerd, systemctl, apt string) {
 
 	fmt.Println("Services restarted.  Please check the aporeto web console for the registered enforcerd agents")
 
+}
+
+func SendRequest(Method string, url string, BodyString string, headerTokens map[string]string, excludeResponseCodes []string, retryCount int) (err error, response string) {
+	retryCount = 0
+	var req *http.Request
+	var resp *http.Response
+	req, err = http.NewRequest(Method, url, bytes.NewBuffer([]byte(BodyString)))
+	if err != nil {
+		response = err.Error()
+	} else {
+		var body []byte
+
+		if len(headerTokens) > 0 {
+			for key, value := range headerTokens {
+				req.Header.Set(key, value)
+			}
+		}
+
+		client := &http.Client{}
+		resp, err = client.Do(req)
+
+		if err != nil {
+			if retryCount > 0 && !strings.Contains(err.Error(), "permission") && (strings.Contains(err.Error(), "dial tcp") || strings.Contains(err.Error(), "EOF")) {
+				//fmt.Println("Error : " + err.Error() + " : Retrying Recursively Attempt : " + strconv.Itoa(retryCount))
+				//logger.Log_ACT(("Error : " + err.Error() + " : Retrying Recursively Attempt : " + strconv.Itoa(retryCount)), logger.Debug, sessionId, FlowData["SMOOTHFLOW_FLOWNAME"].(string), FlowData)
+				err = nil
+				time.Sleep(1 * time.Second)
+				return SendRequest(Method, url, BodyString, headerTokens, excludeResponseCodes, (retryCount - 1))
+			} else {
+				response = "Error : " + err.Error()
+			}
+		} else {
+			if resp.Body != nil {
+				defer resp.Body.Close()
+			}
+
+			body, err = ioutil.ReadAll(resp.Body)
+			if err != nil {
+				response = "Error : " + err.Error()
+			} else {
+				excludeResponses := ""
+
+				if len(excludeResponseCodes) > 0 {
+					for _, value := range excludeResponseCodes {
+						excludeResponses += value + " "
+					}
+				}
+
+				if resp.StatusCode != 200 && !strings.Contains(excludeResponses, strconv.Itoa(resp.StatusCode)) {
+					if len(body) < 4 {
+						err = errors.New("Error! Empty Response Body!")
+					} else {
+						err = errors.New(string(body))
+
+					}
+				} else {
+					response = string(body)
+				}
+			}
+		}
+
+	}
+
+	if strings.Contains(response, "Error :") {
+		//fmt.Println(response)
+		if err != nil {
+			//fmt.Println(err.Error())
+		}
+	} else {
+		//fmt.Println("HTTP_DefaultRequest successful.")
+		//fmt.Println("HTTP Response : " + response)
+	}
+
+	return
 }
