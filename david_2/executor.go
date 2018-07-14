@@ -369,6 +369,10 @@ func main() {
 	_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";kubectl taint nodes --all node-role.kubernetes.io/master- >/dev/null 2>&1", "ksh").Output()
 	fmt.Println("Done")
 
+	fmt.Print("Bind to Kubernetes...")
+	_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";kubectl create clusterrolebinding aporeto --clusterrole=cluster-admin --serviceaccount=kube-system:default >/dev/null 2>&1", "ksh").Output()
+	fmt.Println("Done")
+
 	//Deploy application
 
 	app_r := ""
@@ -522,7 +526,7 @@ func install_apoctl(apoctl, enforcerd, systemctl, apt, curl string, config map[s
 	headerTokens["Content-Type"] = "application/json"
 
 	postMap := make(map[string]interface{})
-	postMap["name"] = "apodemo"
+	postMap["name"] = "aporetodemo10"
 	postMap["targetNamespace"] = NAMESPACE
 
 	bytess, _ := json.Marshal(postMap)
@@ -561,7 +565,7 @@ func install_apoctl(apoctl, enforcerd, systemctl, apt, curl string, config map[s
 
 	time.Sleep(5 * time.Second)
 
-	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;"+systemctl+" enable enforcerd").Output()
+	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;/lib/systemd/systemd-sysv-install enable enforcerd").Output()
 	if err != nil {
 		fmt.Println("Error : Enabling enforcerd. Reason : " + err.Error())
 		os.Exit(1)
