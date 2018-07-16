@@ -20,7 +20,7 @@ func main() {
 	//check for OS
 	if runtime.GOOS != "linux" {
 		fmt.Println("Not supported version of operating system. Found : " + runtime.GOOS + ". Required: Linux Ubuntu")
-		//os.Exit(1)
+		os.Exit(1)
 	}
 
 	hostname, _ := os.Hostname()
@@ -200,7 +200,7 @@ func main() {
 
 	fmt.Println("Restarting Docker...")
 	//Restart docker
-	ioutil.WriteFile("restartDocker.sh", []byte("#!/bin/ksh\nPATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\"\nexport PATH\n"+apt+" update >/dev/null 2>&1\n"+systemctl+" start docker >/dev/null 2>&1 ; sleep 2\n"+systemctl+" enable docker >/dev/null 2>&1 ; sleep 2\n"), 7777)
+	ioutil.WriteFile("restartDocker.sh", []byte("#!/bin/ksh\nPATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\"\nexport PATH\n"+apt+" update >/dev/null 2>&1\n"+systemctl+" start docker >/dev/null 2>&1 ; sleep 2\n"+systemctl+" enable docker >/dev/null 2>&1 ; sleep 2\n/usr/bin/curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -\n/usr/bin/apt-get update >/dev/null 2>&1"), 7777)
 	_, _ = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;chmod 777 restartDocker.sh", "ksh").Output()
 	//execute verifyKLists
 	_, err = exec.Command("/bin/ksh", "PATH=\"$HOME:/usr/bin:/bin:/usr/sbin:/sbin:/usr/ucb\";export PATH;./restartDocker.sh", "ksh").Output()
