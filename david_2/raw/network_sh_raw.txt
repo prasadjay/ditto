@@ -1,0 +1,49 @@
+	$1 init --pod-network-cidr=$2 >> $3 
+	print "Done"
+
+	#
+	#	Setup $HOME
+	#
+	print "Home Path : $HOME"
+	
+	if [ ! -d $HOME/.kube ] ; then
+		mkdir -p $HOME/.kube
+	  	cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+	    	chown $(id -u):$(id -g) $HOME/.kube/config
+
+		#
+		#  	Deploy Project Calico
+		#
+
+		$4 apply -f https://docs.projectcalico.org/v2.6/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml
+		
+	else
+
+		#
+		#	skip if Exists
+		#
+
+		print "$prog: $HOME/.kube Exists...skipping" 1>&2
+		continue
+	fi
+
+
+	#
+	#	Untaint the Master 
+	#
+
+	print "Untaint of the master so it will be available for scheduling workloads...\\c"
+	$4 taint nodes --all node-role.kubernetes.io/master- >/dev/null 2>&1
+	print "Done"
+
+	
+	print "Bind to k8s..."
+	$4 create clusterrolebinding aporeto --clusterrole=cluster-admin --serviceaccount=kube-system:default
+	print "Done"
+
+
+
+	$1 = kubeadm
+	$2 = cidr
+	$3 = out
+	$4 = kubectl

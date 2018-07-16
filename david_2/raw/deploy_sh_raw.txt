@@ -1,0 +1,5 @@
+$1 create namespace guestbook
+$1 apply -n guestbook -f "https://raw.githubusercontent.com/dnester/guestbook/master/guestbook.yaml"
+
+
+$1 = kubectl
