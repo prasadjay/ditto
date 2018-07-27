@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -44,6 +45,9 @@ var JIRA_SERVER string
 var JIRA_USERNAME string
 var JIRA_PASSWORD string
 var JIRA_PROJECT string
+var LAST_CHECKED string
+var LAST_CHECKED_TIME time.Time
+var IS_FIRST_EXECUTION bool
 
 func main() {
 	config := GetConfig()
@@ -56,6 +60,7 @@ func main() {
 	JIRA_USERNAME = config["jira_username"].(string)
 	JIRA_PASSWORD = config["jira_password"].(string)
 	JIRA_PROJECT = config["jira_project"].(string)
+	LAST_CHECKED = config["last_checked"].(string)
 
 	if BEARER_TOKEN == "" {
 		fmt.Println("ERROR : bearer_token cannot be empty. Please update in config.json file.")
@@ -97,6 +102,23 @@ func main() {
 		os.Exit(1)
 	}
 
+	if LAST_CHECKED == "" {
+		IS_FIRST_EXECUTION = true
+		nowTime := time.Now().UTC()
+		config["last_checked"] = nowTime.UTC().Format(time.RFC3339)
+		UpdateConfig(config)
+	} else {
+		var errT error
+		LAST_CHECKED_TIME, _ = time.Parse(time.RFC3339, LAST_CHECKED)
+		if errT != nil {
+			fmt.Println("ERROR : Timestamp reading failed. Reason : " + errT.Error())
+			os.Exit(0)
+		} else {
+			fmt.Println("This script was previously executed @ " + LAST_CHECKED)
+			fmt.Println()
+		}
+	}
+
 	/*
 	 *		Create our HTTP request to the API endpoint
 	 */
@@ -115,6 +137,15 @@ func main() {
 	vulnerabilitiesReq.Header.Set("Cache-Control", "no-cache")
 	vulnerabilitiesResp, err := http.DefaultClient.Do(vulnerabilitiesReq)
 	fmt.Println("Complete")
+
+	nowTime := time.Now().UTC()
+	config["last_checked"] = nowTime.UTC().Format(time.RFC3339)
+	UpdateConfig(config)
+
+	newBugRecordCount := 0
+	newTotalRecordCount := 0
+	oldBugRecordCount := 0
+	oldTotalRecordCount := 0
 
 	/*
 	 *		Error Check
@@ -181,14 +212,33 @@ func main() {
 
 	// vulnerabililty output
 	for v, singledata := range vulnResponseData {
-		if singledata.Severity == 5 && singledata.Name == "CVE-2018-6485" {
-			//Create issue in jira
-			tagString := strings.Join(singledata.NormalizedTags, " ")
-			CreateJiraTask(JIRA_PROJECT, singledata.Name, ("$description=" + singledata.Description + " " + tagString))
+
+		if singledata.CreateTime.After(LAST_CHECKED_TIME) || IS_FIRST_EXECUTION {
+			newTotalRecordCount++
+			if singledata.Severity == 5 {
+				newBugRecordCount++
+				//Create issue in jira
+				tagString := strings.Join(singledata.NormalizedTags, " ")
+				CreateJiraTask(JIRA_PROJECT, singledata.Name, ("$description=" + singledata.Description + " " + tagString))
+			}
+		} else {
+			oldTotalRecordCount++
+			if singledata.Severity == 5 {
+				oldBugRecordCount++
+			}
 		}
+
 		fmt.Fprintf(vulnerabilitiesOutput, "%v, %v, %v, %v, %v, %v, %v\n", vulnResponseData[v].ID, vulnResponseData[v].Link, vulnResponseData[v].Namespace, vulnResponseData[v].Severity, vulnResponseData[v].Protected, vulnResponseData[v].CreateTime, vulnResponseData[v].NormalizedTags)
 	}
 	vulnerabilitiesOutput.Flush()
+
+	fmt.Println()
+	fmt.Println("Issue analyzing and creation completed...")
+	fmt.Println("New Issues (Bugs to Jira) : " + strconv.Itoa(newBugRecordCount))
+	fmt.Println("New Issues ( Total Bugs + Warning) : " + strconv.Itoa(newTotalRecordCount))
+	fmt.Println("Old Issues (Bugs Skipped) : " + strconv.Itoa(oldBugRecordCount))
+	fmt.Println("Old Issues (Total Skipped) : " + strconv.Itoa(oldTotalRecordCount))
+	os.Exit(0)
 
 	/*
 	 * 		End of main
@@ -198,6 +248,8 @@ func main() {
 
 func CreateJiraTask(project, summary, description string) (err error) {
 	fmt.Print("Creating issue : " + summary + " ... ")
+
+	description = strings.Replace(description, `"`, "", -1)
 
 	if CheckIssueExists(summary) {
 		msg := "failed -> Reason : Issue already created. Nothing to do."
@@ -279,6 +331,7 @@ func GetConfig() (config map[string]interface{}) {
 		config["jira_username"] = ""
 		config["jira_password"] = ""
 		config["jira_project"] = ""
+		config["last_checked"] = ""
 		byteArray, _ := json.Marshal(config)
 		_ = ioutil.WriteFile(CONFIG_PATH+"config.json", byteArray, 0777)
 	} else {
@@ -286,6 +339,11 @@ func GetConfig() (config map[string]interface{}) {
 	}
 
 	return
+}
+
+func UpdateConfig(config map[string]interface{}) {
+	b, _ := json.Marshal(config)
+	_ = ioutil.WriteFile(CONFIG_PATH+"config.json", b, 0777)
 }
 
 func EncodeToBase64(message string) (retour string) {
