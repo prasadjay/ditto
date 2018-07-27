@@ -43,6 +43,7 @@ var START_RELATIVE string
 var JIRA_SERVER string
 var JIRA_USERNAME string
 var JIRA_PASSWORD string
+var JIRA_PROJECT string
 
 func main() {
 	config := GetConfig()
@@ -54,6 +55,7 @@ func main() {
 	JIRA_SERVER = config["jira_server"].(string)
 	JIRA_USERNAME = config["jira_username"].(string)
 	JIRA_PASSWORD = config["jira_password"].(string)
+	JIRA_PROJECT = config["jira_project"].(string)
 
 	if BEARER_TOKEN == "" {
 		fmt.Println("ERROR : bearer_token cannot be empty. Please update in config.json file.")
@@ -90,6 +92,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	if JIRA_PROJECT == "" {
+		fmt.Println("ERROR : jira_project cannot be empty. Please update in config.json file.")
+		os.Exit(1)
+	}
+
 	/*
 	 *		Create our HTTP request to the API endpoint
 	 */
@@ -122,6 +129,8 @@ func main() {
 	// 	Receive our response data
 
 	vulnerabilityContent, _ := ioutil.ReadAll(vulnerabilitiesResp.Body)
+
+	ioutil.WriteFile("raw.json", vulnerabilityContent, 0666)
 
 	/*
 	 *		Error Check
@@ -175,7 +184,7 @@ func main() {
 		if singledata.Severity == 5 && singledata.Name == "CVE-2018-6485" {
 			//Create issue in jira
 			tagString := strings.Join(singledata.NormalizedTags, " ")
-			CreateJiraTask("AP12345", singledata.Name, ("$description=" + singledata.Description + " " + tagString))
+			CreateJiraTask(JIRA_PROJECT, singledata.Name, ("$description=" + singledata.Description + " " + tagString))
 		}
 		fmt.Fprintf(vulnerabilitiesOutput, "%v, %v, %v, %v, %v, %v, %v\n", vulnResponseData[v].ID, vulnResponseData[v].Link, vulnResponseData[v].Namespace, vulnResponseData[v].Severity, vulnResponseData[v].Protected, vulnResponseData[v].CreateTime, vulnResponseData[v].NormalizedTags)
 	}
@@ -269,6 +278,7 @@ func GetConfig() (config map[string]interface{}) {
 		config["jira_server"] = ""
 		config["jira_username"] = ""
 		config["jira_password"] = ""
+		config["jira_project"] = ""
 		byteArray, _ := json.Marshal(config)
 		_ = ioutil.WriteFile(CONFIG_PATH+"config.json", byteArray, 0777)
 	} else {
