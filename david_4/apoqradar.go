@@ -19,13 +19,16 @@ import (
  *			Main
  */
 
+var GLOBAL_CONFIG map[string]interface{}
+
 func main() {
 
 	/*
 	 *		Fetch configurations from the config.json (External) file.
 	 */
-
+	GLOBAL_CONFIG = make(map[string]interface{})
 	config := GetConfig()
+	GLOBAL_CONFIG = config
 	bearer_token := config["bearer_token"].(string)
 	namespace := config["namespace"].(string)
 	recursive := config["recursive"].(string)
@@ -148,7 +151,11 @@ func main() {
 	valueStringArray := columnString
 	valueStringArrayRequested := ""
 
+	//for headersend json
+	objectArray := make([]map[string]string, 0)
+
 	for x := 0; x < len(valuesRaw); x++ {
+		singleObject := make(map[string]string)
 
 		/*
 		 *		Iterating through each array block
@@ -182,6 +189,8 @@ func main() {
 
 			if columnArray[y] == "time" {
 				stringVal := GetStringValForInterface(tempArray[y])
+				singleObject[strings.TrimPrefix(strings.TrimPrefix(columnArray[y], "@"), "$")] = stringVal
+
 				if parsedTime, err := time.Parse(time.RFC3339, stringVal); err != nil {
 					fmt.Println(err.Error())
 					tempStringRequested += columnArray[y] + ": " + GetStringValForInterface(tempArray[y]) + ", "
@@ -190,8 +199,12 @@ func main() {
 				}
 			} else {
 				tempStringRequested += columnArray[y] + ": " + GetStringValForInterface(tempArray[y]) + ", "
+				singleObject[strings.TrimPrefix(strings.TrimPrefix(columnArray[y], "@"), "$")] = GetStringValForInterface(tempArray[y])
 			}
+
 		}
+
+		objectArray = append(objectArray, singleObject)
 
 		tempString = strings.TrimRight(tempString, ",")
 		valueStringArray += "\n" + tempString
@@ -199,6 +212,9 @@ func main() {
 		tempStringRequested = strings.TrimRight(tempStringRequested, ", ")
 		valueStringArrayRequested += tempStringRequested + "\n"
 	}
+
+	//Begin transforming to send in headers
+	PublishToIbm(objectArray)
 
 	/*
 	 *		Write output.  The output selections may be modified, but by default the CSV format
@@ -245,6 +261,7 @@ func GetStringValForInterface(input interface{}) (output string) {
 func GetConfig() (config map[string]interface{}) {
 	config = make(map[string]interface{})
 	content, err := ioutil.ReadFile("./aposiem.json")
+	//content, err := ioutil.ReadFile("./apoqradar.json")
 
 	if err != nil {
 		fmt.Println("WARNING : Configuration file not found. Generating an empty configuration file. Please update token and namespace.")
@@ -259,6 +276,22 @@ func GetConfig() (config map[string]interface{}) {
 	}
 
 	return
+}
+
+//Get file content
+//reformat
+//make header
+
+func PublishToIbm(objects []map[string]string) {
+	newTemplateFileString := ""
+	for x := 0; x < len(objects); x++ {
+		object := objects[x]
+		headerString := GLOBAL_CONFIG["ibm_leef_header"].(string) + "\ttime=" + object["time"] + "\tnamespace=" + object["namespace"] + "\taction=" + object["action"] + "\tdestid=" + object["destid"] + "\tdestip=" + object["destip"] + "\tdestport=" + object["destport"] + "\tdesttype=" + object["desttype"] + "\tencrypted=" + object["encrypted"] + "\tl4proto=" + object["l4proto"] + "\toaction=" + object["oaction"] + "\tobserved=" + object["observed"] + "\topolicyid=" + object["opolicyid"] + "\tpolicyid=" + object["policyid"] + "\tpolicyns=" + object["policyns"] + "\treason=" + object["reason"] + "\tsrcid=" + object["srcid"] + "\tsrcip=" + object["srcip"] + "\tsrctype=" + object["srctype"] + "\tsrvid=" + object["srvid"] + "\tsrvtype=" + object["srvtype"] + "\turi=" + object["uri"] + "\tvalue=" + object["value"]
+		newTemplateFileString += headerString + "\n"
+	}
+	//write to file
+	_ = ioutil.WriteFile(GLOBAL_CONFIG["log_path"].(string)+"aporeto_new_format.txt", []byte(newTemplateFileString), 0777)
+
 }
 
 /*
