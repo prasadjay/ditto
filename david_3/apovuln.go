@@ -160,9 +160,6 @@ func main() {
 	// 	Receive our response data
 
 	vulnerabilityContent, _ := ioutil.ReadAll(vulnerabilitiesResp.Body)
-
-	ioutil.WriteFile("raw.json", vulnerabilityContent, 0666)
-
 	/*
 	 *		Error Check
 	 */
