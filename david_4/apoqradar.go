@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log/syslog"
 	"net/http"
 	"os"
 	"strconv"
@@ -283,11 +284,34 @@ func GetConfig() (config map[string]interface{}) {
 //make header
 
 func PublishToIbm(objects []map[string]string) {
+	url := GLOBAL_CONFIG["ibm_server_ip"].(string) + ":" + GLOBAL_CONFIG["ibm_server_port"].(string)
+
+	fmt.Print("Initiating service to SYSLOG server (" + url + ")... ")
+	log, err := syslog.Dial("tcp", url, syslog.LOG_INFO, "apoqradar")
+
+	isOkay := true
+
+	if err != nil {
+		isOkay = false
+		fmt.Println("failed. Reason : " + err.Error())
+		fmt.Println()
+	} else {
+		fmt.Println("success")
+		fmt.Println()
+	}
+
 	newTemplateFileString := ""
 	for x := 0; x < len(objects); x++ {
 		object := objects[x]
 		headerString := GLOBAL_CONFIG["ibm_leef_header"].(string) + "\ttime=" + object["time"] + "\tnamespace=" + object["namespace"] + "\taction=" + object["action"] + "\tdestid=" + object["destid"] + "\tdestip=" + object["destip"] + "\tdestport=" + object["destport"] + "\tdesttype=" + object["desttype"] + "\tencrypted=" + object["encrypted"] + "\tl4proto=" + object["l4proto"] + "\toaction=" + object["oaction"] + "\tobserved=" + object["observed"] + "\topolicyid=" + object["opolicyid"] + "\tpolicyid=" + object["policyid"] + "\tpolicyns=" + object["policyns"] + "\treason=" + object["reason"] + "\tsrcid=" + object["srcid"] + "\tsrcip=" + object["srcip"] + "\tsrctype=" + object["srctype"] + "\tsrvid=" + object["srvid"] + "\tsrvtype=" + object["srvtype"] + "\turi=" + object["uri"] + "\tvalue=" + object["value"]
 		newTemplateFileString += headerString + "\n"
+
+		if isOkay {
+			if err := log.Info(headerString); err != nil {
+				fmt.Println("Error sending syslog. Reason : " + err.Error())
+			}
+		}
+
 	}
 	//write to file
 	_ = ioutil.WriteFile(GLOBAL_CONFIG["log_path"].(string)+"aporeto_new_format.txt", []byte(newTemplateFileString), 0777)
