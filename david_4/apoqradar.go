@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log/syslog"
+	//"log/syslog"
 	"net/http"
 	"os"
 	"strconv"
@@ -261,8 +261,8 @@ func GetStringValForInterface(input interface{}) (output string) {
 
 func GetConfig() (config map[string]interface{}) {
 	config = make(map[string]interface{})
-	content, err := ioutil.ReadFile("./aposiem.json")
-	//content, err := ioutil.ReadFile("./apoqradar.json")
+	//content, err := ioutil.ReadFile("./aposiem.json")
+	content, err := ioutil.ReadFile("./apoqradar.json")
 
 	if err != nil {
 		fmt.Println("WARNING : Configuration file not found. Generating an empty configuration file. Please update token and namespace.")
@@ -287,7 +287,7 @@ func PublishToIbm(objects []map[string]string) {
 	url := GLOBAL_CONFIG["ibm_server_ip"].(string) + ":" + GLOBAL_CONFIG["ibm_server_port"].(string)
 
 	fmt.Print("Initiating service to SYSLOG server (" + url + ")... ")
-	log, err := syslog.Dial("tcp", url, syslog.LOG_INFO, "apoqradar")
+	/*log, err := syslog.Dial("tcp", url, syslog.LOG_INFO, "apoqradar")
 
 	isOkay := true
 
@@ -298,7 +298,7 @@ func PublishToIbm(objects []map[string]string) {
 	} else {
 		fmt.Println("success")
 		fmt.Println()
-	}
+	}*/
 
 	newTemplateFileString := ""
 	for x := 0; x < len(objects); x++ {
@@ -306,11 +306,11 @@ func PublishToIbm(objects []map[string]string) {
 		headerString := GLOBAL_CONFIG["ibm_leef_header"].(string) + "\ttime=" + object["time"] + "\tnamespace=" + object["namespace"] + "\taction=" + object["action"] + "\tdestid=" + object["destid"] + "\tdestip=" + object["destip"] + "\tdestport=" + object["destport"] + "\tdesttype=" + object["desttype"] + "\tencrypted=" + object["encrypted"] + "\tl4proto=" + object["l4proto"] + "\toaction=" + object["oaction"] + "\tobserved=" + object["observed"] + "\topolicyid=" + object["opolicyid"] + "\tpolicyid=" + object["policyid"] + "\tpolicyns=" + object["policyns"] + "\treason=" + object["reason"] + "\tsrcid=" + object["srcid"] + "\tsrcip=" + object["srcip"] + "\tsrctype=" + object["srctype"] + "\tsrvid=" + object["srvid"] + "\tsrvtype=" + object["srvtype"] + "\turi=" + object["uri"] + "\tvalue=" + object["value"]
 		newTemplateFileString += headerString + "\n"
 
-		if isOkay {
-			if err := log.Info(headerString); err != nil {
-				fmt.Println("Error sending syslog. Reason : " + err.Error())
-			}
-		}
+		// if isOkay {
+		// 	if err := log.Info(headerString); err != nil {
+		// 		fmt.Println("Error sending syslog. Reason : " + err.Error())
+		// 	}
+		// }
 
 	}
 	//write to file
