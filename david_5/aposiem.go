@@ -161,7 +161,7 @@ func main() {
 
 			if y == 17 { // resolve dns
 				dns = GetDNSForIp(GetStringValForInterface(tempArray[y]))
-				fmt.Println(dns)
+				//fmt.Println(dns)
 			}
 			/*
 			 *	For our CSV output
@@ -273,23 +273,23 @@ func GetDNSForIp(ip string) (dns string) {
 		dns = "N/A"
 	} else {
 
-		if runtime.GOOS != "linux" {
+		if runtime.GOOS == "windows" {
 			b, err = exec.Command("cmd", "/C", "nslookup "+ip+" | grep Name").Output()
 		} else {
-			b, err = exec.Command("/bin/sh", "nslookup "+ip+" | grep name", "sh").Output()
+			cmd := exec.Command("sh", "-c", "nslookup "+ip+" | grep name")
+			b, err = cmd.Output()
 		}
 
 		if err != nil {
 			dns = "N/A"
 		} else {
-			if runtime.GOOS != "linux" {
+			if runtime.GOOS == "windows" {
 				temp := strings.TrimSpace(string(b))
 				temp = strings.Replace(temp, "Name", "", -1)
 				temp = strings.Replace(temp, ":", "", -1)
 				dns = strings.TrimSpace(temp)
 			} else {
 				temp := strings.TrimSpace(string(b))
-				temp = "213.249.127.13.in-addr.arpa     name = ec2-13-127-249-213.ap-south-1.compute.amazonaws.com."
 				temp = strings.TrimSuffix(temp, ".")
 				tempArray := strings.Split(temp, "name")
 				dns = strings.Replace(tempArray[1], "=", "", -1)
